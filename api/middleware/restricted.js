@@ -1,5 +1,19 @@
+const jwt = require("jsonwebtoken");
+
 module.exports = (req, res, next) => {
-  next();
+  const token = req.headers.Authorization;
+  if (!token) {
+    res.status(401).json({ message: "token required" });
+  } else {
+    jwt.verify(token, "supdude", (err, decoded) => {
+      if (err) {
+        res.status(401).json({ message: "invalid token" });
+      } else {
+        req.decodedToken = decoded;
+        next();
+      }
+    });
+  }
   /*
     IMPLEMENT
 

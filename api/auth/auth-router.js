@@ -1,7 +1,27 @@
-const router = require('express').Router();
+const router = require("express").Router();
+const bcrypt = require("bcryptjs");
+const Users = require("./users-data");
+const jwt = require("jsonwebtoken");
 
-router.post('/register', (req, res) => {
-  res.end('implement register, please!');
+router.post("/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      res.status(400).json("username and password required");
+    } else {
+      const hash = bcrypt.hashSync(password, 8);
+      const existing = await Users.getBy({ username });
+      if (!existing) {
+        const newUser = await Users.add({ username: username, password: hash });
+        res.status(201).json(newUser);
+      } else {
+        res.status(400).json("username taken");
+      }
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -29,8 +49,25 @@ router.post('/register', (req, res) => {
   */
 });
 
-router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      res.status(400).json("username and password required");
+    } else {
+      const user = await Users.getBy({ username });
+      if (user && bcrypt.compareSync(password, user.password)) {
+        const token = makeToken(user);
+        res
+          .status(200)
+          .json({ message: `welcome, ${user.username}`, token: token });
+      } else {
+        res.status(400).json("invalid credentials");
+      }
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -55,5 +92,17 @@ router.post('/login', (req, res) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
+
+function makeToken(user) {
+  const payload = {
+    subject: user.id,
+    username: user.username,
+    role: user.role,
+  };
+  const options = {
+    expiresIn: "500s",
+  };
+  return jwt.sign(payload, "supdude", options);
+}
 
 module.exports = router;
