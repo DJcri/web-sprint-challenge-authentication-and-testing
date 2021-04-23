@@ -2,7 +2,6 @@
 const request = require("supertest");
 const db = require("../data/dbConfig.js");
 const server = require("./server.js");
-const jokes = require("../api/jokes/jokes-data");
 
 const fakeUser = { username: "user001", password: "1234" };
 
